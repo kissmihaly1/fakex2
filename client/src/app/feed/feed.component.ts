@@ -35,7 +35,11 @@ import {AuthService} from '../services/auth.service';
       <main class="main-feed">
         <div class="new-post-container">
           <div class="post-form">
-            <img class="avatar" src="https://i.pravatar.cc/150?img=1" alt="Your profile">
+            <img
+              [src]="user?.profileImage ? 'http://localhost:3000' + user.profileImage : '/assets/default-avatar.png'"
+              alt="Profile image"
+              class="profile-avatar"
+            >
             <div class="input-container">
               <textarea
                 [(ngModel)]="newPostContent"
@@ -77,7 +81,10 @@ import {AuthService} from '../services/auth.service';
             @for (post of posts; track post._id) {
               <div class="post-card">
                 <div class="post-header">
-                  <img class="avatar" [src]="post.user.profileImage" [alt]="post.user.name">
+                  <img class="avatar"
+                       [src]="getImageUrl(post.user.profileImage)"
+                       [alt]="post.user.name">
+
                   <div class="user-info">
                     <div class="name-container">
                       <span class="name">{{ post.user.name }}</span>
@@ -155,7 +162,9 @@ import {AuthService} from '../services/auth.service';
                       @if (post.commentsList?.length) {
                         @for (comment of post.commentsList; track comment._id) {
                           <div class="comment">
-                            <img class="avatar-small" [src]="comment.user.profileImage" [alt]="comment.user.name">
+                            <img class="avatar-small"
+                                 [src]="getImageUrl(comment.user.profileImage)"
+                                 [alt]="comment.user.name">
                             <div class="comment-content">
                               <div class="comment-header">
                                 <span class="name">{{ comment.user.name }}</span>
@@ -216,7 +225,9 @@ import {AuthService} from '../services/auth.service';
           } @else {
             @for (user of recommendedUsers; track user._id) {
               <div class="recommended-user">
-                <img class="avatar" [src]="user.profileImage" [alt]="user.name">
+                <img class="avatar"
+                     [src]="getImageUrl(user.profileImage)"
+                     [alt]="user.name">
                 <div class="user-info">
                   <span class="name">{{ user.name }}</span>
                   <span class="username">&#64;{{ user.username }}</span>
@@ -252,7 +263,7 @@ import {AuthService} from '../services/auth.service';
   styles: [`
     .feed-container {
       display: grid;
-      grid-template-columns: 1fr 2fr 1fr;
+      grid-template-columns: 0.5fr 2fr 1fr;
       gap: 20px;
       max-width: 1280px;
       margin: 0 auto;
@@ -349,6 +360,12 @@ import {AuthService} from '../services/auth.service';
       font-family: inherit;
       padding: 10px 0;
       outline: none;
+    }
+    .profile-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
     }
 
     .post-actions {
@@ -890,6 +907,17 @@ import {AuthService} from '../services/auth.service';
 })
 export class FeedComponent implements OnInit {
   loading = true;
+  user: User = {
+    _id: '',
+    name: '',
+    username: '',
+    email: '',
+    profileImage: '/uploads/default-avatar.png',
+    bio: '',
+    followers: [],
+    following: []
+  };
+
   newPostContent = '';
   posts: Post[] = [];
   recommendedUsers: User[] = [];
@@ -906,6 +934,7 @@ export class FeedComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.loadUser();
 
     this.postService.getPosts().subscribe({
       next: (data) => {
@@ -924,6 +953,16 @@ export class FeedComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error fetching recommended users:', error);
+      }
+    });
+  }
+  loadUser(): void {
+    this.userService.getCurrentUser().subscribe({
+      next: (user) => {
+        this.user = user;
+      },
+      error: (error) => {
+        console.error('Error loading user:', error);
       }
     });
   }
@@ -958,6 +997,20 @@ export class FeedComponent implements OnInit {
       });
     }
   }
+
+  getImageUrl(imagePath: string | null | undefined): string {
+    if (!imagePath) {
+      return '/assets/default-avatar.png';
+    }
+
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+
+    return `http://localhost:3000${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+  }
+
+
   toggleComments(postId: string) {
     this.showComments[postId] = !this.showComments[postId];
 
@@ -1070,6 +1123,7 @@ export class FeedComponent implements OnInit {
       });
     }
   }
+
 
   formatTimeAgo(date: Date): string {
     const now = new Date();

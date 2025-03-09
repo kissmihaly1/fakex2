@@ -44,10 +44,23 @@ export class PostService {
         }
         post.repostCounter = post.repostCounter || 0;
 
+        if (post.user && post.user.profileImage && !post.user.profileImage.startsWith('http')) {
+          if (!post.user.profileImage.includes('http://localhost:3000')) {
+            post.user.profileImage = 'http://localhost:3000' + post.user.profileImage;
+          }
+        }
+
+        if (post.image && !post.image.startsWith('http')) {
+          if (!post.image.includes('http://localhost:3000')) {
+            post.image = 'http://localhost:3000' + post.image;
+          }
+        }
+
         return post;
       }))
     );
   }
+
 
   createPost(content: string): Observable<Post> {
     return this.http.post<Post>(this.apiUrl, { content });

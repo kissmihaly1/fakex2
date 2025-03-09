@@ -5,6 +5,8 @@ import { RegisterComponent } from './register/register.component';
 import {LoginComponent} from './login/login.component';
 import {FeedComponent} from './feed/feed.component';
 import { loggedInGuard } from './guards/logged-in.guard';
+import {ProfileComponent} from './profile/profile.component';
+import {AuthGuard} from './guards/auth.guard';
 
 const authGuard = () => {
   const router = inject(Router);
@@ -23,6 +25,11 @@ export const routes: Routes = [
     path: 'register',
     component: RegisterComponent,
     canActivate: [() => loggedInGuard()]
+  },
+  {
+    path: 'profile',
+    component: ProfileComponent,
+    canActivate: [AuthGuard]
   },
   {
     path: 'login',
