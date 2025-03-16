@@ -1,0 +1,63 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="brand">
+      <h1>X2. Social.</h1>
+      <p class="subtitle">Welcome back</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <div *ngIf="message" [class]="isError ? 'message error' : 'message success'">
+        {{ message }}
+      </div>
+
+      <div class="form-field" [class.invalid]="email?.invalid && email?.touched">
+        <label for="email">Email</label>
+        <div class="input-container">
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            placeholder="Enter your email"
+            autocomplete="email">
+        </div>
+        <div class="error-message" *ngIf="email?.invalid && email?.touched">
+          <span *ngIf="email?.errors?.['required']">Email is required</span>
+          <span *ngIf="email?.errors?.['email']">Please enter a valid email</span>
+        </div>
+      </div>
+
+      <div class="form-field" [class.invalid]="password?.invalid && password?.touched">
+        <label for="password">Password</label>
+        <div class="input-container">
+          <input
+            type="password"
+            id="password"
+            formControlName="password"
+            placeholder="Enter your password"
+            autocomplete="current-password">
+        </div>
+        <div class="error-message" *ngIf="password?.invalid && password?.touched">
+          <span *ngIf="password?.errors?.['required']">Password is required</span>
+        </div>
+      </div>
+
+
+
+      <button
+        type="submit"
+        class="primary-button"
+        [disabled]="loginForm.invalid || submitting">
+        <span *ngIf="!submitting">Log In</span>
+        <div class="loading-spinner" *ngIf="submitting"></div>
+      </button>
+
+      <div class="alt-link">
+        Don't have an account? <a routerLink="/register">Sign up</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="decorative-circle circle-1"></div>
+  <div class="decorative-circle circle-2"></div>
+  <div class="decorative-circle circle-3"></div>
+</div>

@@ -1,0 +1,32 @@
+<div class="home-container">
+  <div class="home-card">
+    <div class="brand">
+      <h1>X2. Social.</h1>
+      <p class="subtitle">The next evolution of social media</p>
+    </div>
+
+    <div class="hero-section">
+      <h2>Connect, Share, Discover</h2>
+      <p>Join millions of users who share and discover content that matters to them.</p>
+
+      <div class="cta-buttons">
+        <a routerLink="/register" class="primary-button">Get Started</a>
+      </div>
+    </div>
+
+    <div class="features-grid">
+      @for (feature of features; track feature.title) {
+        <div class="feature-card">
+          <div class="feature-icon">{{ feature.icon }}</div>
+          <h4>{{ feature.title }}</h4>
+          <p>{{ feature.description }}</p>
+        </div>
+      }
+    </div>
+
+
+  <div class="decorative-circle circle-1"></div>
+  <div class="decorative-circle circle-2"></div>
+  <div class="decorative-circle circle-3"></div>
+</div>
+</div>

@@ -1,0 +1,174 @@
+<div class="admin">
+  <div class="header">
+    <h1>Admin Dashboard</h1>
+  </div>
+
+
+  <div *ngIf="errorMessage" class="alert error">
+    <span>{{ errorMessage }}</span>
+    <button class="close" (click)="errorMessage = ''">×</button>
+  </div>
+
+  <div *ngIf="successMessage" class="alert success">
+    <span>{{ successMessage }}</span>
+    <button class="close" (click)="successMessage = ''">×</button>
+  </div>
+
+
+  <div class="tabs">
+    <button
+      [class.active]="selectedTab === 'users'"
+      (click)="selectTab('users')">
+      Manage Users
+    </button>
+    <button
+      [class.active]="selectedTab === 'posts'"
+      (click)="selectTab('posts')">
+      Manage Posts
+    </button>
+  </div>
+
+
+  <div *ngIf="isLoading" class="loader">
+    <div class="spinner"></div>
+  </div>
+
+
+  <div *ngIf="selectedTab === 'users' && !isLoading" class="section">
+    <div class="section-header">
+      <h2>Users</h2>
+      <div class="search">
+        <input
+          type="text"
+          [(ngModel)]="userSearchTerm"
+          (input)="filterUsers()"
+          placeholder="Search users..."
+        >
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of filteredUsers">
+            <td>
+              <div class="user-cell">
+                <img [src]="user?.profileImage ? 'http://localhost:3000' + user.profileImage : '/uploads/default-profile-image.png'" alt="Profile">
+                <span>{{ user.username }}</span>
+              </div>
+            </td>
+            <td>{{ user.email }}</td>
+            <td>
+              <span class="id">{{ user._id }}</span>
+            </td>
+            <td>
+              <span *ngIf="isBanned(user)" class="badge banned">
+                Banned until {{ getBanEndDate(user.bannedUntil) }}
+              </span>
+              <span *ngIf="!isBanned(user)" class="badge active">Active</span>
+            </td>
+            <td>
+              <div class="actions">
+                <div *ngIf="!isBanned(user)" class="ban-controls">
+                  <input
+                    type="number"
+                    [(ngModel)]="banDurations[user._id]"
+                    min="1"
+                    placeholder="Days">
+                  <button
+                    (click)="banUser(user._id, banDurations[user._id])"
+                    class="btn warn">
+                    Ban
+                  </button>
+                </div>
+                <button
+                  *ngIf="isBanned(user)"
+                  (click)="unbanUser(user._id)"
+                  class="btn success">
+                  Unban
+                </button>
+                <button
+                  (click)="deleteUser(user._id)"
+                  class="btn danger">
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredUsers.length === 0">
+            <td colspan="5" class="empty">No users found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <div *ngIf="selectedTab === 'posts' && !isLoading" class="section">
+    <div class="section-header">
+      <h2>Posts</h2>
+      <div class="search">
+        <input
+          type="text"
+          [(ngModel)]="postSearchTerm"
+          (input)="filterPosts()"
+          placeholder="Search posts..."
+        >
+      </div>
+    </div>
+
+    <div class="posts-grid">
+      <div *ngFor="let post of filteredPosts" class="post-card">
+        <div class="post-header">
+          <div class="user-info">
+            <img
+              [src]="post.user?.profileImage ? 'http://localhost:3000' + post.user.profileImage : '/uploads/default-profile-image.png'"
+              alt="Profile">
+            <div>
+              <div class="username">{{ post.user?.username }}</div>
+              <div class="date">{{ post.createdAt | date:'medium' }}</div>
+            </div>
+          </div>
+          <button
+            (click)="deletePost(post._id)"
+            class="btn danger">
+            Delete
+          </button>
+        </div>
+
+        <div class="post-content">
+          <p>{{ post.content }}</p>
+        </div>
+
+        <div class="post-footer">
+          <span class="stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            {{ post.likes?.length || 0 }}
+          </span>
+          <span class="stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            {{ post.commentCount || 0 }}
+          </span>
+          <span class="post-id">ID: {{ post._id }}</span>
+        </div>
+      </div>
+
+      <div *ngIf="filteredPosts.length === 0" class="empty-state">
+        No posts found
+      </div>
+    </div>
+  </div>
+</div>

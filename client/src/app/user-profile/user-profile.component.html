@@ -1,0 +1,176 @@
+<div class="user-profile-container">
+  <div *ngIf="loading" class="loading-spinner">
+    Loading...
+  </div>
+
+  <div *ngIf="!loading" class="profile-header">
+    <div class="user-info">
+      <div class="profile-image">
+        <img
+          [src]="getImageUrl(user?.profileImage)"
+
+          alt="Profile image"
+          class="profile-avatar"
+        >
+      </div>
+      <div class="user-details">
+        <h2>{{ user.name }}</h2>
+        <p class="username">&#64;{{ user.username }}</p>
+        <p *ngIf="user.bio" class="bio">{{ user.bio }}</p>
+
+        <div class="stats">
+          <div class="stat">
+            <span class="count">{{ user.postCount || 0 }}</span>
+            <span class="label">Posts</span>
+          </div>
+          <div class="stat clickable" (click)="showFollowers()">
+            <span class="count">{{ user.followers || 0 }}</span>
+            <span class="label">Followers</span>
+          </div>
+          <div class="stat clickable" (click)="showFollowing()">
+            <span class="count">{{ user.following || 0 }}</span>
+            <span class="label">Following</span>
+          </div>
+        </div>
+
+        <div class="actions" *ngIf="currentUser._id !== user._id">
+          <button [class.following]="isFollowing" (click)="toggleFollow()">
+            {{ isFollowing ? 'Unfollow' : 'Follow' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="posts-section">
+    <h3>Posts</h3>
+    @if (posts.length === 0) {
+      <div class="empty-feed">
+        <div class="empty-icon">📭</div>
+        <h3>No posts yet</h3>
+        <p>This user hasn't posted anything.</p>
+      </div>
+    } @else {
+      @for (post of posts; track post._id) {
+        <div class="post-card">
+          <div class="post-header">
+            <img class="avatar"
+                 [src]="getImageUrl(user?.profileImage)"
+                 [alt]="user.name">
+
+            <div class="user-info">
+              <div class="name-container">
+                <span class="name">{{ user.name }}</span>
+                <span class="username">&#64;{{ user.username }}</span>
+                @if (post.isRepost) {
+                  <span class="reposted-tag">Reposted</span>
+                }
+              </div>
+              <span class="timestamp">{{ formatTimeAgo(post.createdAt) }}</span>
+            </div>
+          </div>
+
+          @if (post.isRepost && post.originalPost) {
+            <div class="repost-container">
+              @if (!post.originalPost) {
+                <div class="debug-info">
+                  <p>No original post found</p>
+                </div>
+              } @else {
+                <div class="original-post-header">
+                  <img class="avatar-small"
+                       [src]="getImageUrl(post.originalPost.user?.profileImage)"
+                       [alt]="post.originalPost.user?.name || 'Unknown User'">
+                  <span class="name">{{ post.originalPost.user?.name || 'Unknown' }}</span>
+                  <span class="username">&#64;{{ post.originalPost.user?.username || 'username' }}</span>
+                  <span class="timestamp">{{ formatTimeAgo(post.originalPost.createdAt) || 'No date' }}</span>
+                </div>
+                <div class="original-content">
+                  {{ post.originalPost.content || 'No content available' }}
+                </div>
+              }
+            </div>
+          }
+
+
+          <div class="post-content">
+            {{ post.content }}
+          </div>
+
+          <div class="post-actions-bar">
+            <button class="action-btn comment" (click)="toggleComments(post._id)">
+              <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <g>
+                  <path d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01zm8.005-6c-3.317 0-6.005 2.69-6.005 6 0 3.37 2.77 6.08 6.138 6.01l.351-.01h1.761v2.3l5.087-2.81c1.951-1.08 3.163-3.13 3.163-5.36 0-3.39-2.744-6.13-6.129-6.13H9.756z"></path>
+                </g>
+              </svg>
+              <span class="count">{{ getCommentCount(post) }}</span>
+            </button>
+            <button class="action-btn repost">
+              <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <g>
+                  <path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"></path>
+                </g>
+              </svg>
+              <div class="repost-count">{{ post.repostCounter || 0 }} reposts</div>
+            </button>
+            <button class="action-button"
+                    [class.liked]="post.isLiked"
+                    (click)="toggleLike(post)">
+              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor"
+                   [class.liked-svg]="post.isLiked">
+                <path [attr.d]="post.isLiked ? 'M16.697 5.5c-1.222-.06-2.679.51-3.89 2.16l-.805 1.09-.806-1.09C9.984 6.01 8.526 5.44 7.304 5.5c-1.243.07-2.349.78-2.91 1.91-.552 1.12-.633 2.78.479 4.82 1.074 1.97 3.257 4.27 7.129 6.61 3.87-2.34 6.052-4.64 7.126-6.61 1.111-2.04 1.03-3.7.477-4.82-.561-1.13-1.666-1.84-2.908-1.91zm4.187 7.69c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z' : 'M20.884 13.19c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z'"></path>
+              </svg>
+              <span>{{ getLikeCount(post) }}</span>
+            </button>
+          </div>
+
+          @if (showComments && showComments[post._id]) {
+            <div class="comments-section">
+              <div class="comments-list">
+                @if (post.commentsList?.length) {
+                  @for (comment of post.commentsList; track comment._id) {
+                    <div class="comment">
+                      <img class="avatar-small"
+                           [src]="getImageUrl(comment.user.profileImage)"
+                           [alt]="comment.user.name">
+                      <div class="comment-content">
+                        <div class="comment-header">
+                          <span class="name">{{ comment.user.name }}</span>
+                          <span class="username">&#64;{{ comment.user.username }}</span>
+                          <span class="timestamp">{{ formatTimeAgo(comment.createdAt) }}</span>
+                        </div>
+                        <div class="comment-text">{{ comment.content }}</div>
+                      </div>
+                    </div>
+                  }
+                } @else {
+                  <div class="no-comments">No comments yet</div>
+                }
+              </div>
+
+              <div class="add-comment">
+                <img class="avatar-small" [src]="getImageUrl(currentUser?.profileImage)" [alt]="currentUser?.name">
+                <div class="comment-input-container">
+                <textarea
+                  [(ngModel)]="commentContent"
+                  placeholder="Add a comment..."
+                  rows="1"
+                ></textarea>
+                  <button
+                    class="comment-btn"
+                    [disabled]="!commentContent.trim()"
+                    [class.disabled]="!commentContent.trim()"
+                    (click)="addComment(post._id)"
+                  >
+                    Reply
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

@@ -1,0 +1,274 @@
+:root {
+  --primary-color: #1DA1F2;
+  --primary-light: rgba(29, 161, 242, 0.1);
+  --accent-color: #F9A826;
+  --text-primary: #14171A;
+  --text-secondary: #657786;
+  --error-color: #E0245E;
+  --success-color: #17BF63;
+  --background-color: #ffffff;
+  --card-background: #ffffff;
+  --border-color: #E1E8ED;
+  --input-background: #F5F8FA;
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--background-color);
+  font-family: "Roboto Mono",-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card-background);
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  padding: 40px;
+  position: relative;
+  z-index: 10;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.brand {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.logo {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.logo svg {
+  fill: var(--primary-color);
+}
+
+.brand h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 16px;
+  margin: 0;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+
+.input-container {
+  position: relative;
+}
+
+.form-field input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-background);
+  font-size: 16px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.form-field input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(29, 161, 242, 0.2);
+}
+
+.form-field.invalid input {
+  border-color: var(--error-color);
+}
+
+.icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--success-color);
+  font-weight: bold;
+}
+
+.error-message {
+  font-size: 12px;
+  color: var(--error-color);
+  margin-top: 6px;
+  animation: fadeIn 0.3s ease;
+}
+
+.register-button {
+  background-color: var(--primary-color);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 14px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-button:hover:not(:disabled) {
+  background-color: #0d8ed9;
+}
+
+.register-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.login-link {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.login-link a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
+}
+
+.message {
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.message.success {
+  background-color: rgba(23, 191, 99, 0.1);
+  color: var(--success-color);
+}
+
+.message.error {
+  background-color: rgba(224, 36, 94, 0.1);
+  color: var(--error-color);
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+.register-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.register-footer a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.register-footer a:hover {
+  text-decoration: underline;
+}
+
+
+.decorative-circle {
+  position: absolute;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.circle-1 {
+  background: linear-gradient(135deg, #1DA1F2 0%, #19608F 100%);
+  width: 300px;
+  height: 300px;
+  top: -100px;
+  right: -100px;
+  opacity: 0.1;
+}
+
+.circle-2 {
+  background: linear-gradient(135deg, #F9A826 0%, #F7732F 100%);
+  width: 200px;
+  height: 200px;
+  bottom: -50px;
+  left: 10%;
+  opacity: 0.1;
+}
+
+.circle-3 {
+  background: var(--primary-color);
+  width: 100px;
+  height: 100px;
+  top: 30%;
+  left: -30px;
+  opacity: 0.05;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  .register-card {
+    padding: 30px 20px;
+  }
+
+  .brand h1 {
+    font-size: 22px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-10px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}

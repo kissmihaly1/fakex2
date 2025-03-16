@@ -1,0 +1,145 @@
+<main class="main-feed">
+  <div class="profile-container">
+    <h1 class="section-title">Profile</h1>
+
+    <div class="loading-spinner" *ngIf="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="profile-content" *ngIf="!loading">
+      <div class="profile-header">
+        <div class="profile-image-container">
+          <img [src]="'http://localhost:3000' + user.profileImage" alt="Profile image" class="profile-image">
+
+          <div class="image-upload-overlay">
+            <input
+              #fileInput
+              type="file"
+              (change)="onFileSelected($event)"
+              accept=".jpg,.jpeg,.png,.gif,.webp"
+              style="display: none;"
+            >
+            <button class="change-photo-btn" (click)="fileInput.click()">
+              Change Photo
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="selectedFile" class="upload-actions">
+          <button class="upload-btn" (click)="uploadProfileImage()">Save Photo</button>
+          <button class="cancel-btn" (click)="selectedFile = null; imagePreview = null;">Cancel</button>
+        </div>
+
+        <div class="profile-stats">
+          <div class="stat" (click)="showFollowers()">
+            <span class="stat-value">{{user.followers?.length || 0}}</span>
+            <span class="stat-label">Followers</span>
+          </div>
+          <div class="stat" (click)="showFollowing()">
+            <span class="stat-value">{{user.following?.length || 0}}</span>
+            <span class="stat-label">Following</span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="showModal" class="modal-backdrop" (click)="onBackdropClick($event)">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>{{modalTitle}}</h2>
+            <button class="close-btn" (click)="closeModal()">×</button>
+          </div>
+          <div class="modal-body">
+            <div *ngIf="modalLoading">Loading...</div>
+            <div *ngIf="!modalLoading && modalUsers.length === 0">No users found</div>
+            <div *ngIf="!modalLoading" class="user-list">
+              <div *ngFor="let user of modalUsers" class="user-item" (click)="viewUserProfile(user._id)">
+                <img [src]="getImageUrl(user?.profileImage)" alt="Profile picture" class="user-avatar">
+                <div class="user-info">
+                  <div class="user-name">{{user.name}}</div>
+                  <div class="user-username">&#64;{{user.username}}</div>
+                </div>
+              </div>
+              </div>
+
+              <div class="no-users-message" *ngIf="modalUsers.length === 0">
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+      <div class="profile-details">
+        <div class="profile-actions" *ngIf="!editMode">
+          <button class="edit-btn" (click)="toggleEditMode()">Edit Profile</button>
+          <button class="password-btn" (click)="toggleChangePassword()">Change Password</button>
+        </div>
+
+        <div *ngIf="!editMode" class="user-info">
+          <h2 class="user-name">{{user.name || user.username}}</h2>
+          <p class="user-username">&#64;{{user.username}}</p>
+          <p class="user-email">{{user.email}}</p>
+          <p class="user-bio" *ngIf="user.bio">{{user.bio}}</p>
+        </div>
+
+        <form *ngIf="editMode" [formGroup]="profileForm" (ngSubmit)="updateProfile()" class="edit-form">
+          <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" id="name" formControlName="name" class="form-control">
+            <div *ngIf="profileForm.get('name')?.invalid && profileForm.get('name')?.touched" class="error-message">
+              Name is required
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" formControlName="username" class="form-control">
+            <div *ngIf="profileForm.get('username')?.invalid && profileForm.get('username')?.touched" class="error-message">
+              Username is required
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="bio">Bio</label>
+            <textarea id="bio" formControlName="bio" class="form-control" rows="3"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="save-btn" [disabled]="profileForm.invalid">Save Changes</button>
+            <button type="button" class="cancel-btn" (click)="toggleEditMode()">Cancel</button>
+          </div>
+        </form>
+
+        <form *ngIf="changePasswordMode" [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="password-form">
+          <div class="form-group">
+            <label for="currentPassword">Current Password</label>
+            <input type="password" id="currentPassword" formControlName="currentPassword" class="form-control">
+            <div *ngIf="passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched" class="error-message">
+              Current password is required
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="newPassword">New Password</label>
+            <input type="password" id="newPassword" formControlName="newPassword" class="form-control">
+            <div *ngIf="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched" class="error-message">
+              Password must be at least 6 characters
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" id="confirmPassword" formControlName="confirmPassword" class="form-control">
+            <div *ngIf="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched" class="error-message">
+              Passwords do not match
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="save-btn" [disabled]="passwordForm.invalid">Change Password</button>
+            <button type="button" class="cancel-btn" (click)="toggleChangePassword()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
