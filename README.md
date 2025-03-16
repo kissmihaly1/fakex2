@@ -39,7 +39,7 @@ cd ../client
 npm install
 ```
 
-4. Create a `.env` file in the server directory with the following variables (or use the existing one if provided):
+4. Create a `.env` file in the server directory with the following variables:
 ```
 MONGODB_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret
