@@ -1,15 +1,14 @@
-# FakeXReal Social Media Platform
+# FakeX Social Media Platform
 
-A modern social media platform built with Node.js, Express, and Angular, featuring real-time interactions and a clean, intuitive interface.
+A social media platform built with Node.js, Express, and Angular, featuring real-time interactions and a clean, intuitive interface.
 
 ## Features
 
-- 👤 User authentication and profile management
-- 📝 Create, like, and comment on posts
-- 🔄 Repost functionality
-- 🖼️ Image upload support
-- 👑 Admin dashboard for content moderation
-- 🚫 User management (ban/unban functionality)
+- User authentication and profile management
+- Create, like, and comment on posts
+- Repost functionality
+- Image upload support
+- Admin dashboard for content moderation
 
 ## Getting Started
 
