@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Admin = require('../models/Admin');
 const auth = require('../middleware/auth');
 const upload = require('../middleware/uploadMiddleware');
 const bcrypt = require('bcrypt');
@@ -18,10 +19,11 @@ router.get('/', async (req, res) => {
 
 router.get('/me', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('-password');
+        const model = req.isAdmin ? Admin : User;
+        const user = await model.findById(req.user.id).select('-password');
 
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(401).json({ message: 'User session is invalid' });
         }
 
         res.json(user);
@@ -34,16 +36,14 @@ router.get('/me', auth, async (req, res) => {
 router.get('/recommended', auth, async (req, res) => {
     try {
         const currentUserId = req.user.id;
+        const model = req.isAdmin ? Admin : User;
 
-
-        const currentUser = await User.findById(currentUserId);
+        const currentUser = await model.findById(currentUserId);
         if (!currentUser) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(401).json({ message: 'User session is invalid' });
         }
 
-
-        const excludeIds = [...currentUser.following.map(id => id.toString()), currentUserId];
-
+        const excludeIds = [...(currentUser.following || []).map(id => id.toString()), currentUserId];
 
         const recommendedUsers = await User.find({
             _id: { $nin: excludeIds }
@@ -58,10 +58,11 @@ router.get('/recommended', auth, async (req, res) => {
 
 router.get('/profile', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('-password');
+        const model = req.isAdmin ? Admin : User;
+        const user = await model.findById(req.user.id).select('-password');
 
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(401).json({ message: 'User session is invalid' });
         }
 
         res.json(user);
@@ -74,6 +75,7 @@ router.get('/profile', auth, async (req, res) => {
 router.put('/profile', auth, async (req, res) => {
     try {
         const { name, username, bio } = req.body;
+        const model = req.isAdmin ? Admin : User;
 
         if (username) {
             const existingUser = await User.findOne({
@@ -81,12 +83,20 @@ router.put('/profile', auth, async (req, res) => {
                 _id: { $ne: req.user.id }
             });
 
-            if (existingUser) {
+            const existingAdmin = await Admin.findOne({
+                username,
+                _id: { $ne: req.user.id }
+            });
+
+            if (existingUser || existingAdmin) {
                 return res.status(400).json({ message: 'Username is already taken' });
             }
         }
 
-        const user = await User.findById(req.user.id);
+        const user = await model.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
         if (name) user.name = name;
         if (username) user.username = username;
@@ -101,8 +111,9 @@ router.put('/profile', auth, async (req, res) => {
             email: user.email,
             profileImage: user.profileImage,
             bio: user.bio,
-            followers: user.followers,
-            following: user.following
+            followers: user.followers || [],
+            following: user.following || [],
+            isAdmin: req.isAdmin
         });
     } catch (err) {
         console.error('Profile update error:', err);
@@ -117,12 +128,17 @@ router.put('/profile/image', auth, upload.single('profileImage'), async (req, re
         }
 
         const imageUrl = `/uploads/${req.file.filename}`;
+        const model = req.isAdmin ? Admin : User;
 
-        const user = await User.findByIdAndUpdate(
+        const user = await model.findByIdAndUpdate(
             req.user.id,
             { profileImage: imageUrl },
             { new: true }
         ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
         res.json(user);
     } catch (err) {
@@ -134,11 +150,14 @@ router.put('/profile/image', auth, upload.single('profileImage'), async (req, re
 router.put('/profile/password', auth, async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
+        const model = req.isAdmin ? Admin : User;
 
-        const user = await User.findById(req.user.id);
+        const user = await model.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
         const isMatch = await bcrypt.compare(currentPassword, user.password);
-
         if (!isMatch) {
             return res.status(400).json({ message: 'Current password is incorrect' });
         }
@@ -162,13 +181,18 @@ router.post('/follow/:userId', auth, async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const currentUser = await User.findById(req.user.id);
+        const model = req.isAdmin ? Admin : User;
+        const currentUser = await model.findById(req.user.id);
 
-        if (currentUser.following.includes(req.params.userId)) {
+        if (!currentUser) {
+            return res.status(404).json({ message: 'Current user not found' });
+        }
+
+        if (currentUser.following && currentUser.following.includes(req.params.userId)) {
             return res.status(400).json({ message: 'Already following this user' });
         }
 
-        await User.findByIdAndUpdate(req.user.id, {
+        await model.findByIdAndUpdate(req.user.id, {
             $push: { following: req.params.userId }
         });
 
@@ -190,7 +214,9 @@ router.delete('/unfollow/:userId', auth, async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        await User.findByIdAndUpdate(req.user.id, {
+        const model = req.isAdmin ? Admin : User;
+
+        await model.findByIdAndUpdate(req.user.id, {
             $pull: { following: req.params.userId }
         });
 
@@ -207,9 +233,15 @@ router.delete('/unfollow/:userId', auth, async (req, res) => {
 
 router.get('/is-following/:userId', auth, async (req, res) => {
     try {
-        const currentUser = await User.findById(req.user.id);
-        const isFollowing = currentUser.following.includes(req.params.userId);
-        res.status(200).json({ following: isFollowing });
+        const model = req.isAdmin ? Admin : User;
+        const currentUser = await model.findById(req.user.id);
+
+        if (!currentUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const isFollowing = currentUser.following && currentUser.following.includes(req.params.userId);
+        res.status(200).json({ following: !!isFollowing });
     } catch (error) {
         console.error('Error checking follow status:', error);
         res.status(500).json({ message: 'Server error' });
@@ -218,13 +250,15 @@ router.get('/is-following/:userId', auth, async (req, res) => {
 
 router.get('/followers', auth, async (req, res) => {
     try {
-        const currentUser = await User.findById(req.user.id);
+        const model = req.isAdmin ? Admin : User;
+        const currentUser = await model.findById(req.user.id);
+
         if (!currentUser) {
             return res.status(404).json({ message: 'User not found' });
         }
 
         const followers = await User.find({
-            _id: { $in: currentUser.followers }
+            _id: { $in: currentUser.followers || [] }
         }).select('-password');
 
         res.status(200).json(followers);
@@ -236,13 +270,15 @@ router.get('/followers', auth, async (req, res) => {
 
 router.get('/following', auth, async (req, res) => {
     try {
-        const currentUser = await User.findById(req.user.id);
+        const model = req.isAdmin ? Admin : User;
+        const currentUser = await model.findById(req.user.id);
+
         if (!currentUser) {
             return res.status(404).json({ message: 'User not found' });
         }
 
         const following = await User.find({
-            _id: { $in: currentUser.following }
+            _id: { $in: currentUser.following || [] }
         }).select('-password');
 
         res.status(200).json(following);
@@ -351,10 +387,15 @@ router.get('/user/:userId', auth, async (req, res) => {
 
 router.get('/check-follow/:userId', auth, async (req, res) => {
     try {
-        const currentUser = await User.findById(req.user.id);
-        const isFollowing = currentUser.following.includes(req.params.userId);
+        const model = req.isAdmin ? Admin : User;
+        const currentUser = await model.findById(req.user.id);
 
-        res.status(200).json({ isFollowing });
+        if (!currentUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const isFollowing = currentUser.following && currentUser.following.includes(req.params.userId);
+        res.status(200).json({ isFollowing: !!isFollowing });
     } catch (error) {
         console.error('Error checking follow status:', error);
         res.status(500).json({ message: 'Server error' });

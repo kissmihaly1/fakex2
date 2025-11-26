@@ -62,7 +62,7 @@
           <tr *ngFor="let user of filteredUsers">
             <td>
               <div class="user-cell">
-                <img [src]="user?.profileImage ? 'http://localhost:3000' + user.profileImage : '/uploads/default-profile-image.png'" alt="Profile">
+                <img [src]="getImageUrl(user?.profileImage)" alt="Profile">
                 <span>{{ user.username }}</span>
               </div>
             </td>
@@ -131,7 +131,7 @@
         <div class="post-header">
           <div class="user-info">
             <img
-              [src]="post.user?.profileImage ? 'http://localhost:3000' + post.user.profileImage : '/uploads/default-profile-image.png'"
+              [src]="getImageUrl(post.user?.profileImage)"
               alt="Profile">
             <div>
               <div class="username">{{ post.user?.username }}</div>

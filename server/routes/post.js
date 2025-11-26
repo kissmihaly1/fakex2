@@ -10,50 +10,55 @@ const upload = require('../middleware/uploadMiddleware');
 router.get('/', auth, async (req, res) => {
     try {
         const currentUserId = req.user._id;
+        const Admin = require('../models/Admin');
 
         const posts = await Post.find()
-            .populate('user', '-password')
-            .populate({
-                path: 'originalPost',
-                populate: {
-                    path: 'user',
-                    select: '-password'
-                }
-            })
             .sort({ createdAt: -1 });
 
-        const formattedPosts = posts.map(post => {
-            const isLiked = post.likes.some(like => like.toString() === currentUserId.toString());
+        const formattedPosts = await Promise.all(posts.map(async (post) => {
+            const isLiked = post.likes && post.likes.some(like => like.toString() === currentUserId.toString());
+
+            let user = await User.findById(post.user).select('-password');
+            if (!user) {
+                user = await Admin.findById(post.user).select('-password');
+            }
 
             const formattedPost = {
                 _id: post._id,
                 content: post.content,
-                user: post.user,
+                user: user ? user.toObject() : { username: 'Unknown', name: 'Unknown User', profileImage: '/uploads/default-profile-image.png' },
                 createdAt: post.createdAt,
-                likes: post.likes.length,
+                likes: post.likes ? post.likes.length : 0,
                 comments: post.commentCount || 0,
-                isLiked: isLiked,
+                isLiked: !!isLiked,
                 repostCounter: post.repostCounter || 0,
                 image: post.image
             };
 
             if (post.isRepost && post.originalPost) {
-                formattedPost.isRepost = true;
-                formattedPost.originalPost = {
-                    _id: post.originalPost._id,
-                    content: post.originalPost.content,
-                    user: post.originalPost.user,
-                    createdAt: post.originalPost.createdAt,
-                    image: post.originalPost.image,
-                    repostCounter: post.repostCounter || 0,
-                    isLiked: post.originalPost.likes &&
-                        post.originalPost.likes.some(like =>
+                const originalPost = await Post.findById(post.originalPost);
+                if (originalPost) {
+                    let originalUser = await User.findById(originalPost.user).select('-password');
+                    if (!originalUser) {
+                        originalUser = await Admin.findById(originalPost.user).select('-password');
+                    }
+
+                    formattedPost.isRepost = true;
+                    formattedPost.originalPost = {
+                        _id: originalPost._id,
+                        content: originalPost.content,
+                        user: originalUser ? originalUser.toObject() : { username: 'Unknown', name: 'Unknown User', profileImage: '/uploads/default-profile-image.png' },
+                        createdAt: originalPost.createdAt,
+                        image: originalPost.image,
+                        repostCounter: originalPost.repostCounter || 0,
+                        isLiked: originalPost.likes && originalPost.likes.some(like =>
                             like.toString() === currentUserId.toString())
-                };
+                    };
+                }
             }
 
             return formattedPost;
-        });
+        }));
 
         res.json(formattedPosts);
     } catch (err) {
@@ -262,11 +267,25 @@ router.post('/:id/comments', auth, async (req, res) => {
         post.commentCount = (post.commentCount || 0) + 1;
         await post.save();
 
-        const populatedComment = await Comment.findById(comment._id)
-            .populate('user', 'username profileImage');
+        const User = require('../models/User');
+        const Admin = require('../models/Admin');
+
+        let user = await User.findById(comment.user).select('username name profileImage');
+        if (!user) {
+            user = await Admin.findById(comment.user).select('username name profileImage');
+        }
+
+        const commentObj = comment.toObject();
+        commentObj.user = user ? user.toObject() : {
+            username: 'Unknown',
+            name: 'Unknown User',
+            profileImage: '/uploads/default-profile-image.png'
+        };
+        commentObj.likes = 0;
+        commentObj.isLiked = false;
 
         res.json({
-            comment: populatedComment,
+            comment: commentObj,
             commentCount: post.commentCount
         });
     } catch (err) {
@@ -278,18 +297,32 @@ router.post('/:id/comments', auth, async (req, res) => {
 router.get('/:id/comments', auth, async (req, res) => {
     try {
         const currentUserId = req.user.id;
+        const User = require('../models/User');
+        const Admin = require('../models/Admin');
+
         const comments = await Comment.find({ post: req.params.id })
-            .populate('user', 'username name profileImage')
             .sort({ createdAt: -1 });
 
-        const formattedComments = comments.map(comment => {
+        const formattedComments = await Promise.all(comments.map(async (comment) => {
             const commentObj = comment.toObject();
+
+            let user = await User.findById(comment.user).select('username name profileImage');
+            if (!user) {
+                user = await Admin.findById(comment.user).select('username name profileImage');
+            }
+
+            commentObj.user = user ? user.toObject() : {
+                username: 'Unknown',
+                name: 'Unknown User',
+                profileImage: '/uploads/default-profile-image.png'
+            };
+
             commentObj.isLiked = comment.likes && comment.likes.some(
                 like => like.toString() === currentUserId.toString()
             );
             commentObj.likes = comment.likes ? comment.likes.length : 0;
             return commentObj;
-        });
+        }));
 
         res.json(formattedComments);
     } catch (err) {
@@ -332,10 +365,16 @@ router.delete('/comments/:id', auth, async (req, res) => {
 router.post('/:id/repost', auth, async (req, res) => {
     try {
         const currentUserId = req.user._id;
-        const originalPost = await Post.findById(req.params.id).populate('user', '-password');
+        const Admin = require('../models/Admin');
 
+        const originalPost = await Post.findById(req.params.id);
         if (!originalPost) {
             return res.status(404).json({ message: 'Original post not found' });
+        }
+
+        let originalPostUser = await User.findById(originalPost.user).select('-password');
+        if (!originalPostUser) {
+            originalPostUser = await Admin.findById(originalPost.user).select('-password');
         }
 
         const content = req.body.content || `Reposted: ${originalPost.content.substring(0, 50)}${originalPost.content.length > 50 ? '...' : ''}`;
@@ -345,7 +384,7 @@ router.post('/:id/repost', auth, async (req, res) => {
             user: currentUserId,
             isRepost: true,
             originalPost: req.params.id,
-            originalUser: originalPost.user._id,
+            originalUser: originalPost.user,
             commentCount: 0
         });
 
@@ -355,35 +394,32 @@ router.post('/:id/repost', auth, async (req, res) => {
             $inc: { repostCounter: 1 }
         });
 
-        const populatedRepost = await Post.findById(savedRepost._id)
-            .populate('user', '-password')
-            .populate({
-                path: 'originalPost',
-                populate: {
-                    path: 'user',
-                    select: '-password'
-                }
-            });
+        let repostUser = await User.findById(currentUserId).select('-password');
+        if (!repostUser) {
+            repostUser = await Admin.findById(currentUserId).select('-password');
+        }
 
         res.status(201).json({
-            _id: populatedRepost._id,
-            content: populatedRepost.content,
-            user: populatedRepost.user,
-            createdAt: populatedRepost.createdAt,
+            _id: savedRepost._id,
+            content: savedRepost.content,
+            user: repostUser ? repostUser.toObject() : { username: 'Unknown', name: 'Unknown User', profileImage: '/uploads/default-profile-image.png' },
+            createdAt: savedRepost.createdAt,
             likes: 0,
             comments: 0,
             isLiked: false,
             isRepost: true,
+            repostCounter: 0,
             originalPost: {
-                _id: populatedRepost.originalPost._id,
-                content: populatedRepost.originalPost.content,
-                user: populatedRepost.originalPost.user,
-                createdAt: populatedRepost.originalPost.createdAt,
-                image: populatedRepost.originalPost.image,
-                repostCounter: populatedRepost.originalPost.repostCounter + 1
+                _id: originalPost._id,
+                content: originalPost.content,
+                user: originalPostUser ? originalPostUser.toObject() : { username: 'Unknown', name: 'Unknown User', profileImage: '/uploads/default-profile-image.png' },
+                createdAt: originalPost.createdAt,
+                image: originalPost.image,
+                repostCounter: (originalPost.repostCounter || 0) + 1
             }
         });
     } catch (err) {
+        console.error('Error creating repost:', err);
         res.status(400).json({ message: err.message });
     }
 });

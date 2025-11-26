@@ -243,23 +243,19 @@ export class AppComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // Subscribe to auth changes
     this.authSubscription = this.authService.user$.subscribe(user => {
       this.isLoggedIn = !!user;
       this.isAdmin = !!user && !!user.isAdmin;
     });
 
-    // Listen for route changes to refresh auth state
     this.routerSubscription = this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
       this.checkAuthState();
     });
 
-    // Initialize auth state on startup
     this.checkAuthState();
 
-    // Force auth check from localStorage
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     if (token && userStr) {
@@ -276,7 +272,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    // Clean up subscriptions
     if (this.authSubscription) {
       this.authSubscription.unsubscribe();
     }

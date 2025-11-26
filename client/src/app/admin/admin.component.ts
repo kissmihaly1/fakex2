@@ -245,4 +245,16 @@ export class AdminComponent implements OnInit {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString();
   }
+
+  getImageUrl(imagePath: string | null | undefined): string {
+    if (!imagePath) {
+      return 'http://localhost:3000/uploads/default-profile-image.png';
+    }
+
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+
+    return `http://localhost:3000${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+  }
 }

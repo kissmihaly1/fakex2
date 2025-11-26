@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { UserService, User } from '../services/user.service';
 import { PostService, Post } from '../services/post.service';
 import {AuthService} from '../services/auth.service';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
 @Component({
   selector: 'app-feed',
   standalone: true,
@@ -85,22 +84,22 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
               <div class="post-card">
                 <div class="post-header">
                   <img class="avatar"
-                       [src]="getImageUrl(post.user.profileImage)"
-                       [alt]="post.user.name"
-                       [routerLink]="['/profile', post.user._id]"
+                       [src]="getImageUrl(post.user?.profileImage)"
+                       [alt]="post.user?.name || 'User'"
+                       [routerLink]="post.user?._id ? ['/profile', post.user._id] : []"
                        style="cursor: pointer;">
 
                   <div class="user-info">
                     <div class="name-container">
           <span class="name"
-                [routerLink]="['/user', post.user._id]"
+                [routerLink]="post.user?._id ? ['/user', post.user._id] : []"
                 style="cursor: pointer; color: inherit; text-decoration: none;"
                 (click)="$event.stopPropagation()">
-            {{ post.user.name }}
+            {{ post.user?.name || 'Unknown User' }}
           </span>
-                      <span class="username" [routerLink]="['/user', post.user._id]"
+                      <span class="username" [routerLink]="post.user?._id ? ['/user', post.user._id] : []"
                             style="cursor: pointer; color: inherit; text-decoration: none;"
-                            (click)="$event.stopPropagation()">&#64;{{ post.user.username }}</span>
+                            (click)="$event.stopPropagation()">&#64;{{ post.user?.username || 'unknown' }}</span>
                       @if (post.isRepost) {
                         <span class="reposted-tag">Reposted</span>
                       }
@@ -190,12 +189,12 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
                         @for (comment of post.commentsList; track comment._id) {
                           <div class="comment">
                             <img class="avatar-small"
-                                 [src]="getImageUrl(comment.user.profileImage)"
-                                 [alt]="comment.user.name">
+                                 [src]="getImageUrl(comment.user?.profileImage)"
+                                 [alt]="comment.user?.name || 'User'">
                             <div class="comment-content">
                               <div class="comment-header">
-                                <span class="name">{{ comment.user.name }}</span>
-                                <span class="username">&#64;{{ comment.user.username }}</span>
+                                <span class="name">{{ comment.user?.name || 'Unknown User' }}</span>
+                                <span class="username">&#64;{{ comment.user?.username || 'unknown' }}</span>
                                 <span class="timestamp">{{ formatTimeAgo(comment.createdAt) }}</span>
                               </div>
                               <div class="comment-text">{{ comment.content }}</div>
@@ -220,7 +219,7 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
 
                     <div class="add-comment">
                       <img
-                        [src]="user?.profileImage ? 'http://localhost:3000' + user.profileImage : '/uploads/default-profile-image.png'"
+                        [src]="getImageUrl(user?.profileImage)"
                         alt="Profile image"
                         class="avatar-small"
                       >
@@ -259,7 +258,6 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
                    (input)="updateSearch($event)">
           </div>
 
-          <!-- Search results dropdown -->
           <div class="search-results" *ngIf="searchQuery && searchResults.length > 0">
             <div class="search-results-container">
               <h4>Users</h4>
@@ -342,7 +340,6 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
       </aside>
     </div>
 
-    <!-- Repost Modal -->
     <div class="modal-overlay" *ngIf="showRepostModal">
       <div class="modal-content">
         <div class="modal-header">
@@ -430,7 +427,6 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
       background-color: #0d8ed9;
     }
 
-    /* Main Feed Styles */
     .main-feed {
       border-left: 1px solid #EFF3F4;
       border-right: 1px solid #EFF3F4;
@@ -690,7 +686,6 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
       background-color: rgba(0, 186, 124, 0.1);
     }
 
-    /* Right Sidebar Styles */
     .right-sidebar {
       padding: 20px 0;
       position: sticky;
@@ -922,7 +917,6 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
       font-size: 13px;
     }
 
-    /* Modal Styles */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -1224,7 +1218,6 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
       cursor: not-allowed;
     }
 
-    /* Post content image styles */
     .post-image {
       margin: 10px 0 15px 60px;
       max-width: calc(100% - 60px);
@@ -1293,18 +1286,10 @@ export class FeedComponent implements OnInit {
     private postService: PostService,
     private userService: UserService,
     private authService: AuthService,
-    private http: HttpClient,
 
   ) {}
 
   ngOnInit() {
-    const justLoggedIn = localStorage.getItem('just_logged_in');
-    if (justLoggedIn === 'true') {
-      localStorage.removeItem('just_logged_in');
-      window.location.reload();
-      return;
-    }
-
     this.loadUser();
     this.loadPosts();
     this.loadRecommendedUsers();
@@ -1384,30 +1369,25 @@ export class FeedComponent implements OnInit {
   }
 
   followUser(userId: string) {
-    const token = localStorage.getItem('token');
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
     this.followLoading[userId] = true;
 
     this.followedUserIds.add(userId);
 
-    this.http.post<any>(`http://localhost:3000/api/users/follow/${userId}`, {}, { headers })
-      .subscribe({
-        next: (response) => {
-          this.recommendedUsers = this.recommendedUsers.filter(user => user._id !== userId);
-          this.followLoading[userId] = false;
+    this.userService.followUser(userId).subscribe({
+      next: () => {
+        this.recommendedUsers = this.recommendedUsers.filter(user => user._id !== userId);
+        this.followLoading[userId] = false;
 
-          if (this.user && this.user.following && !this.user.following.includes(userId)) {
-            this.user.following.push(userId);
-          }
-
-        },
-        error: (error) => {
-          console.error('Error following user:', error);
-          this.followedUserIds.delete(userId);
-          this.followLoading[userId] = false;
+        if (this.user && this.user.following && !this.user.following.includes(userId)) {
+          this.user.following.push(userId);
         }
-      });
+      },
+      error: (error) => {
+        console.error('Error following user:', error);
+        this.followedUserIds.delete(userId);
+        this.followLoading[userId] = false;
+      }
+    });
   }
 
   getImageUrl(imagePath: string | null | undefined): string {

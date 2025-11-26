@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: false },
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
-    profileImage: { type: String, default: 'http://localhost:3000/uploads/default-profile-image.png' },
+    profileImage: { type: String, default: '/uploads/default-profile-image.png' },
     password: { type: String, required: true },
     bio: { type: String, default: '' },
     bannedUntil: { type: Date, default: null },

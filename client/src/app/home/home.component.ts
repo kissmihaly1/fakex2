@@ -1,4 +1,3 @@
-// client/src/app/home/home.component.ts
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';

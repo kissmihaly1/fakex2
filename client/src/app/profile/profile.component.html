@@ -6,10 +6,10 @@
       <div class="spinner"></div>
     </div>
 
-    <div class="profile-content" *ngIf="!loading">
+    <div class="profile-content" *ngIf="!loading && user">
       <div class="profile-header">
         <div class="profile-image-container">
-          <img [src]="'http://localhost:3000' + user.profileImage" alt="Profile image" class="profile-image">
+          <img [src]="getImageUrl(user?.profileImage)" alt="Profile image" class="profile-image">
 
           <div class="image-upload-overlay">
             <input

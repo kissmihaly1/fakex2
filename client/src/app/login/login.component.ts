@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import {Router, RouterLink} from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -33,8 +33,8 @@ export class LoginComponent {
 
   constructor(
     private fb: FormBuilder,
-    private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -56,18 +56,13 @@ export class LoginComponent {
     this.isError = false;
 
     const formData = this.loginForm.value;
-    this.http.post<any>('http://localhost:3000/api/login', formData).subscribe({
+    this.authService.login(formData).subscribe({
       next: (data) => {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-
         this.message = 'Login successful!';
         this.submitting = false;
-
         setTimeout(() => {
-          window.location.href = '/feed';
-          window.location.reload();
-        }, 100);
+          this.router.navigateByUrl('/feed');
+        }, 50);
       },
       error: (err) => {
         this.message = err.error.msg || 'Login failed';

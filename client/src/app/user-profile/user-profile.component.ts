@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../services/user.service';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { CommonModule } from '@angular/common';
 import {FormsModule} from '@angular/forms';
@@ -37,7 +36,6 @@ export class UserProfileComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private userService: UserService,
-    private http: HttpClient,
     private snackBar: MatSnackBar,
     private postService: PostService,
     private authService: AuthService
@@ -87,28 +85,18 @@ export class UserProfileComponent implements OnInit {
 
   loadUserProfile(): void {
     this.loading = true;
-    const token = localStorage.getItem('token');
-    if (!token) {
-      this.snackBar.open('Authentication required', 'Close', { duration: 3000 });
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-    this.http.get<any>(`${this.apiUrl}/users/${this.userId}`, { headers })
-      .subscribe({
-        next: (user) => {
-          this.user = user;
-          this.loading = false;
-        },
-        error: (error) => {
-          console.error('Error loading user profile:', error);
-          this.loading = false;
-          this.snackBar.open('Failed to load user profile', 'Close', { duration: 3000 });
-          this.router.navigate(['/']);
-        }
-      });
+    this.userService.getUserById(this.userId).subscribe({
+      next: (user) => {
+        this.user = user;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading user profile:', error);
+        this.loading = false;
+        this.snackBar.open('Failed to load user profile', 'Close', { duration: 3000 });
+        this.router.navigate(['/']);
+      }
+    });
   }
 
 
@@ -124,65 +112,51 @@ export class UserProfileComponent implements OnInit {
   }
 
   checkIfFollowing(): void {
-    const token = localStorage.getItem('token');
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-    this.http.get<{isFollowing: boolean}>(`${this.apiUrl}/users/check-follow/${this.userId}`, { headers })
-      .subscribe({
-        next: (result) => {
-          this.isFollowing = result.isFollowing;
-        },
-        error: (error) => {
-          console.error('Error checking follow status:', error);
-        }
-      });
+    this.userService.checkFollow(this.userId).subscribe({
+      next: (result) => {
+        this.isFollowing = result.isFollowing;
+      },
+      error: (error) => {
+        console.error('Error checking follow status:', error);
+      }
+    });
   }
   loadFollowers(): void {
     this.modalLoading = true;
-    const token = localStorage.getItem('token');
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-
-    this.http.get<any[]>(`${this.apiUrl}/users/${this.userId}/followers`, { headers })
-      .subscribe({
-        next: (users) => {
-          this.modalUsers = users.map(user => {
-            if (user.profileImage && !user.profileImage.startsWith('http')) {
-              user.profileImage = `http://localhost:3000${user.profileImage.startsWith('/') ? '' : '/'}${user.profileImage}`;
-            }
-            return user;
-          });
-          this.modalLoading = false;
-        },
-        error: (error) => {
-          console.error('Error loading followers:', error);
-          this.modalLoading = false;
-        }
-      });
+    this.userService.getFollowers(this.userId).subscribe({
+      next: (users) => {
+        this.modalUsers = users.map(user => {
+          if (user.profileImage && !user.profileImage.startsWith('http')) {
+            user.profileImage = `http://localhost:3000${user.profileImage.startsWith('/') ? '' : '/'}${user.profileImage}`;
+          }
+          return user;
+        });
+        this.modalLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading followers:', error);
+        this.modalLoading = false;
+      }
+    });
   }
 
   loadFollowing(): void {
     this.modalLoading = true;
-    const token = localStorage.getItem('token');
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-
-    this.http.get<any[]>(`${this.apiUrl}/users/${this.userId}/following`, { headers })
-      .subscribe({
-        next: (users) => {
-          this.modalUsers = users.map(user => {
-            if (user.profileImage && !user.profileImage.startsWith('http')) {
-              user.profileImage = `http://localhost:3000${user.profileImage.startsWith('/') ? '' : '/'}${user.profileImage}`;
-            }
-            return user;
-          });
-          this.modalLoading = false;
-        },
-        error: (error) => {
-          console.error('Error loading following:', error);
-          this.modalLoading = false;
-        }
-      });
+    this.userService.getFollowing(this.userId).subscribe({
+      next: (users) => {
+        this.modalUsers = users.map(user => {
+          if (user.profileImage && !user.profileImage.startsWith('http')) {
+            user.profileImage = `http://localhost:3000${user.profileImage.startsWith('/') ? '' : '/'}${user.profileImage}`;
+          }
+          return user;
+        });
+        this.modalLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading following:', error);
+        this.modalLoading = false;
+      }
+    });
   }
   getImageUrl(imagePath: string | null | undefined): string {
     if (!imagePath) {
@@ -217,6 +191,7 @@ export class UserProfileComponent implements OnInit {
 
     return `${Math.floor(months / 12)}y ago`;
   }
+
 
   toggleComments(postId: string) {
     this.showComments[postId] = !this.showComments[postId];
@@ -318,35 +293,30 @@ export class UserProfileComponent implements OnInit {
 
 
   toggleFollow(): void {
-    const token = localStorage.getItem('token');
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
     if (this.isFollowing) {
-      this.http.delete(`${this.apiUrl}/users/unfollow/${this.userId}`, { headers })
-        .subscribe({
-          next: () => {
-            this.isFollowing = false;
-            this.user.followers--;
-            this.snackBar.open(`Unfollowed ${this.user.name}`, 'Close', { duration: 3000 });
-          },
-          error: (error) => {
-            console.error('Error unfollowing user:', error);
-            this.snackBar.open('Failed to unfollow user', 'Close', { duration: 3000 });
-          }
-        });
+      this.userService.unfollowUser(this.userId).subscribe({
+        next: () => {
+          this.isFollowing = false;
+          this.user.followers--;
+          this.snackBar.open(`Unfollowed ${this.user.name}`, 'Close', { duration: 3000 });
+        },
+        error: (error) => {
+          console.error('Error unfollowing user:', error);
+          this.snackBar.open('Failed to unfollow user', 'Close', { duration: 3000 });
+        }
+      });
     } else {
-      this.http.post(`${this.apiUrl}/users/follow/${this.userId}`, {}, { headers })
-        .subscribe({
-          next: () => {
-            this.isFollowing = true;
-            this.user.followers++;
-            this.snackBar.open(`Following ${this.user.name}`, 'Close', { duration: 3000 });
-          },
-          error: (error) => {
-            console.error('Error following user:', error);
-            this.snackBar.open('Failed to follow user', 'Close', { duration: 3000 });
-          }
-        });
+      this.userService.followUser(this.userId).subscribe({
+        next: () => {
+          this.isFollowing = true;
+          this.user.followers++;
+          this.snackBar.open(`Following ${this.user.name}`, 'Close', { duration: 3000 });
+        },
+        error: (error) => {
+          console.error('Error following user:', error);
+          this.snackBar.open('Failed to follow user', 'Close', { duration: 3000 });
+        }
+      });
     }
   }
 }

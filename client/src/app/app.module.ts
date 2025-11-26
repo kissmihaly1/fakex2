@@ -7,11 +7,10 @@ import { AppComponent } from './app.component';
 import { HomeComponent } from './home/home.component';
 import { RegisterComponent } from './register/register.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import {HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi} from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import {AdminComponent} from './admin/admin.component';
 
-// @ts-ignore
 @NgModule({
   declarations: [
 
@@ -28,8 +27,7 @@ import {AdminComponent} from './admin/admin.component';
 
   ],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: authInterceptor, multi: true },
-    provideHttpClient(withInterceptorsFromDi())
+    provideHttpClient(withInterceptors([authInterceptor]))
   ],
   bootstrap: [AppComponent]
 })

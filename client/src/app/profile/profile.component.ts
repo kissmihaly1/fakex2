@@ -3,7 +3,6 @@ import { UserService } from '../services/user.service';
 import {FormGroup, FormBuilder, Validators, ReactiveFormsModule} from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { CommonModule } from '@angular/common';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {Router} from '@angular/router';
 
 @Component({
@@ -34,7 +33,6 @@ export class ProfileComponent implements OnInit {
     private userService: UserService,
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
-    private http: HttpClient,
     private router: Router,
 
   ) {
@@ -86,7 +84,6 @@ export class ProfileComponent implements OnInit {
   toggleEditMode(): void {
     this.editMode = !this.editMode;
     if (!this.editMode) {
-      // Reset form when canceling edit
       this.profileForm.patchValue({
         name: this.user.name || '',
         username: this.user.username,
@@ -190,38 +187,30 @@ export class ProfileComponent implements OnInit {
 
   loadFollowers(): void {
     this.modalLoading = true;
-    const token = localStorage.getItem('token');
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-    this.http.get<any[]>(`http://localhost:3000/api/users/followers`, { headers })
-      .subscribe({
-        next: (users) => {
-          this.modalUsers = users;
-          this.modalLoading = false;
-        },
-        error: (error) => {
-          console.error('Error loading followers:', error);
-          this.modalLoading = false;
-        }
-      });
+    this.userService.getFollowers().subscribe({
+      next: (users) => {
+        this.modalUsers = users;
+        this.modalLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading followers:', error);
+        this.modalLoading = false;
+      }
+    });
   }
 
   loadFollowing(): void {
     this.modalLoading = true;
-    const token = localStorage.getItem('token');
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-    this.http.get<any[]>(`http://localhost:3000/api/users/following`, { headers })
-      .subscribe({
-        next: (users) => {
-          this.modalUsers = users;
-          this.modalLoading = false;
-        },
-        error: (error) => {
-          console.error('Error loading following:', error);
-          this.modalLoading = false;
-        }
-      });
+    this.userService.getFollowing().subscribe({
+      next: (users) => {
+        this.modalUsers = users;
+        this.modalLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading following:', error);
+        this.modalLoading = false;
+      }
+    });
   }
   onBackdropClick(event: MouseEvent): void {
     if (event.target === event.currentTarget) {

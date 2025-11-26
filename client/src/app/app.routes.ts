@@ -43,7 +43,7 @@ export const routes: Routes = [
   {
     path: 'feed',
     component: FeedComponent,
-    canActivate: [() => authGuard()]
+    canActivate: [AuthGuard]
   },
   {
     path: 'admin',

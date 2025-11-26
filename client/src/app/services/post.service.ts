@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import {map, Observable} from 'rxjs';
+import { map, Observable } from 'rxjs';
+import { AuthService } from './auth.service';
 
 export interface Comment {
   _id: string;
@@ -32,7 +33,10 @@ export interface Post {
 export class PostService {
   private apiUrl = 'http://localhost:3000/api/posts';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
 
   getPosts(): Observable<any[]> {
     return this.http.get<any[]>(this.apiUrl).pipe(
@@ -50,8 +54,12 @@ export class PostService {
           post.image = `http://localhost:3000${post.image.startsWith('/') ? '' : '/'}${post.image}`;
         }
 
-        if (post.user && post.user.profileImage && !post.user.profileImage.startsWith('http')) {
-          post.user.profileImage = `http://localhost:3000${post.user.profileImage.startsWith('/') ? '' : '/'}${post.user.profileImage}`;
+        if (post.user) {
+          if (!post.user.profileImage) {
+            post.user.profileImage = 'http://localhost:3000/uploads/default-profile-image.png';
+          } else if (!post.user.profileImage.startsWith('http')) {
+            post.user.profileImage = `http://localhost:3000${post.user.profileImage.startsWith('/') ? '' : '/'}${post.user.profileImage}`;
+          }
         }
 
         if (post.isRepost && post.originalPost) {
@@ -59,9 +67,12 @@ export class PostService {
             post.originalPost.image = `http://localhost:3000${post.originalPost.image.startsWith('/') ? '' : '/'}${post.originalPost.image}`;
           }
 
-          if (post.originalPost.user && post.originalPost.user.profileImage &&
-              !post.originalPost.user.profileImage.startsWith('http')) {
-            post.originalPost.user.profileImage = `http://localhost:3000${post.originalPost.user.profileImage.startsWith('/') ? '' : '/'}${post.originalPost.user.profileImage}`;
+          if (post.originalPost.user) {
+            if (!post.originalPost.user.profileImage) {
+              post.originalPost.user.profileImage = 'http://localhost:3000/uploads/default-profile-image.png';
+            } else if (!post.originalPost.user.profileImage.startsWith('http')) {
+              post.originalPost.user.profileImage = `http://localhost:3000${post.originalPost.user.profileImage.startsWith('/') ? '' : '/'}${post.originalPost.user.profileImage}`;
+            }
           }
         }
 
@@ -71,8 +82,12 @@ export class PostService {
   }
 
   private formatPostImages(post: any): any {
-    if (post.user && post.user.profileImage && !post.user.profileImage.startsWith('http')) {
-      post.user.profileImage = `http://localhost:3000${post.user.profileImage.startsWith('/') ? '' : '/'}${post.user.profileImage}`;
+    if (post.user) {
+      if (!post.user.profileImage) {
+        post.user.profileImage = 'http://localhost:3000/uploads/default-profile-image.png';
+      } else if (!post.user.profileImage.startsWith('http')) {
+        post.user.profileImage = `http://localhost:3000${post.user.profileImage.startsWith('/') ? '' : '/'}${post.user.profileImage}`;
+      }
     }
 
     if (post.image && !post.image.startsWith('http')) {
@@ -84,9 +99,12 @@ export class PostService {
         post.originalPost.image = `http://localhost:3000${post.originalPost.image.startsWith('/') ? '' : '/'}${post.originalPost.image}`;
       }
 
-      if (post.originalPost.user && post.originalPost.user.profileImage &&
-          !post.originalPost.user.profileImage.startsWith('http')) {
-        post.originalPost.user.profileImage = `http://localhost:3000${post.originalPost.user.profileImage.startsWith('/') ? '' : '/'}${post.originalPost.user.profileImage}`;
+      if (post.originalPost.user) {
+        if (!post.originalPost.user.profileImage) {
+          post.originalPost.user.profileImage = 'http://localhost:3000/uploads/default-profile-image.png';
+        } else if (!post.originalPost.user.profileImage.startsWith('http')) {
+          post.originalPost.user.profileImage = `http://localhost:3000${post.originalPost.user.profileImage.startsWith('/') ? '' : '/'}${post.originalPost.user.profileImage}`;
+        }
       }
     }
 
@@ -98,8 +116,7 @@ export class PostService {
   }
 
   createPostWithImage(formData: FormData): Observable<Post> {
-    const headers = new HttpHeaders().delete('Content-Type');
-    return this.http.post<Post>(this.apiUrl, formData, { headers });
+    return this.http.post<Post>(this.apiUrl, formData);
   }
 
   likePost(postId: string): Observable<any> {
@@ -107,7 +124,6 @@ export class PostService {
   }
 
   unlikePost(postId: string): Observable<any> {
-
     return this.http.post(`${this.apiUrl}/${postId}/unlike`, {});
   }
 
